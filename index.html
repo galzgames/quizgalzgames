@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizArena — Quizzes ao Vivo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="notif"></div>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="mwsm center">
+    <div class="logo">QuizArena</div>
+    <p class="subtitle">Quizzes ao vivo com amigos</p>
+    <div class="stack">
+      <button class="btn btn-p lg" onclick="go('admin-login')">🎮 Criar / Gerenciar Quiz</button>
+      <button class="btn btn-s lg" onclick="go('join')">🚀 Entrar numa Sala</button>
+    </div>
+    <p class="hint">Abra em dois dispositivos ou abas do mesmo navegador</p>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="admin-login" class="screen">
+  <div class="mwsm">
+    <h2>Acesso Admin</h2>
+    <div class="card">
+      <div class="field"><label>Usuário</label><input id="au" value="admin"></div>
+      <div class="field"><label>Senha</label><input id="ap" type="password" value="1234"></div>
+      <button class="btn btn-p full" onclick="adminLogin()">Entrar</button>
+      <p class="hint center" style="margin-top:.55rem">Padrão: admin / 1234</p>
+    </div>
+    <button class="btn btn-s full mt" onclick="go('home')">← Voltar</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="screen">
+  <div class="mw">
+    <div class="row-between mb">
+      <div>
+        <h2 class="left mb0">Meus Quizzes</h2>
+        <p class="muted small">Gerencie e inicie salas</p>
+      </div>
+      <div class="row gap">
+        <button class="btn btn-p" onclick="newQuiz()">+ Novo Quiz</button>
+        <button class="btn btn-s" onclick="go('home')">Sair</button>
+      </div>
+    </div>
+    <div id="qlist" class="scr"></div>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor" class="screen">
+  <div class="mw">
+    <div class="row gap mb">
+      <button class="btn btn-s" onclick="go('dashboard')">← Voltar</button>
+      <h2 class="flex1 mb0">Editor de Quiz</h2>
+      <button class="btn btn-g" onclick="saveQuiz()">💾 Salvar</button>
+    </div>
+    <div class="card mb"><label>Título</label><input id="qt" placeholder="Título do quiz..."></div>
+    <div id="ql" class="scr"></div>
+    <button class="btn btn-p full mt" onclick="addQ()">+ Adicionar Pergunta</button>
+  </div>
+</div>
+
+<!-- LOBBY HOST -->
+<div id="lobby" class="screen">
+  <div class="mwsm center">
+    <p class="muted small mb0">Código da Sala</p>
+    <div class="code-box" id="lcode">------</div>
+    <p class="muted small">Compartilhe com os jogadores!</p>
+    <div class="info-box">
+      💡 Todos devem abrir <strong>este site</strong> e clicar em "Entrar numa Sala", digitar o nome e o código acima.
+    </div>
+    <div class="card my">
+      <div class="row-between mb">
+        <span class="bold">Jogadores</span>
+        <span class="badge" id="lcount">0</span>
+      </div>
+      <div id="lplayers" class="chips"></div>
+    </div>
+    <div class="wdots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <p class="muted small mb">Aguardando jogadores...</p>
+    <button class="btn btn-gold full lg" onclick="startGame()">▶ Iniciar Quiz</button>
+    <button class="btn btn-d full mt" onclick="cancelRoom()">Cancelar Sala</button>
+  </div>
+</div>
+
+<!-- GAME HOST -->
+<div id="game-host" class="screen">
+  <div class="mw">
+    <div class="row-between mb0">
+      <span class="badge" id="ghn">1/1</span>
+      <span class="muted small" id="ghans">0 respostas</span>
+    </div>
+    <div class="pbar"><div class="pfill" id="ghprog" style="width:0%"></div></div>
+    <div class="tw">
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="28" fill="none" stroke="#241848" stroke-width="7"/>
+        <circle id="ghring" cx="34" cy="34" r="28" fill="none" stroke="#F59E0B" stroke-width="7" stroke-dasharray="176" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="tn" id="ghtimer">20</div>
+    </div>
+    <div class="card mb"><p id="ghq" class="qtext"></p></div>
+    <div class="ans-grid" id="ghopts"></div>
+    <div id="ghreveal" style="display:none" class="mt">
+      <div class="card"><p class="muted small center mb">Placar ao vivo</p><div id="ghrank"></div></div>
+      <button class="btn btn-p full mt" onclick="nextQ()" id="ghnext">Próxima →</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN -->
+<div id="join" class="screen">
+  <div class="mwsm">
+    <button class="btn btn-s mb" onclick="go('home')">← Voltar</button>
+    <h2>Entrar no Quiz</h2>
+    <div class="card">
+      <div class="field"><label>Seu nome</label><input id="pname" placeholder="Como te chamamos?"></div>
+      <div class="field">
+        <label>Código da Sala</label>
+        <input id="pcode" class="code-input" placeholder="XXXXXX" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn btn-p full lg" onclick="joinRoom()">Entrar 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- WAITING -->
+<div id="waiting" class="screen">
+  <div class="mwsm center">
+    <div class="big-icon">🎮</div>
+    <h2>Você está dentro!</h2>
+    <p id="wname" class="player-name"></p>
+    <p class="muted mb">Aguardando o anfitrião iniciar...</p>
+    <div class="wdots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="card mt">
+      <p class="muted small">Sala</p>
+      <div class="code-box sm" id="wcode"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYING -->
+<div id="playing" class="screen">
+  <div class="mwsm">
+    <div class="row-between mb0">
+      <span class="badge" id="plqn">1/1</span>
+      <span class="pts" id="plpts">0 pts</span>
+    </div>
+    <div class="pbar"><div class="pfill" id="plprog" style="width:0%"></div></div>
+    <div class="tw">
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="28" fill="none" stroke="#241848" stroke-width="7"/>
+        <circle id="plring" cx="34" cy="34" r="28" fill="none" stroke="#F59E0B" stroke-width="7" stroke-dasharray="176" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="tn" id="pltimer">20</div>
+    </div>
+    <div class="card mb">
+      <p class="muted small mb0" id="plqnum">Pergunta 1</p>
+      <p id="plq" class="qtext"></p>
+    </div>
+    <div class="ans-grid" id="plopts"></div>
+    <div id="plfb" style="display:none" class="mt">
+      <div class="card center">
+        <div id="plicon" class="fb-icon"></div>
+        <p id="pltxt" class="fb-title"></p>
+        <p id="plptsadd" class="fb-pts"></p>
+        <p class="muted small mt">Aguardando próxima pergunta...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL HOST -->
+<div id="final" class="screen">
+  <div class="mwsm center">
+    <div class="big-icon">🏆</div>
+    <h1>Fim do Quiz!</h1>
+    <p class="muted mb">Resultados finais</p>
+    <div class="pod" id="finpod"></div>
+    <div id="finwinner" class="winner-box" style="display:none">
+      <p class="muted small mb0">🏆 PRÊMIO — ENTRE EM CONTATO!</p>
+      <p id="finwname" class="winner-name"></p>
+    </div>
+    <div class="card left mb"><p class="muted small bold mb">CLASSIFICAÇÃO</p><div id="finrank"></div></div>
+    <button class="btn btn-p full mb" onclick="go('dashboard')">Voltar ao Dashboard</button>
+    <button class="btn btn-s full" onclick="replayRoom()">▶ Jogar Novamente</button>
+  </div>
+</div>
+
+<!-- FINAL PLAYER -->
+<div id="pfinal" class="screen">
+  <div class="mwsm center">
+    <div class="big-icon" id="pfico"></div>
+    <h2 id="pftitle"></h2>
+    <p class="muted mb" id="pfsub"></p>
+    <div class="card mb">
+      <p class="muted small">Sua pontuação</p>
+      <p class="final-score" id="pfscore"></p>
+      <p class="muted small" id="pfpos"></p>
+    </div>
+    <div class="card left mb"><p class="muted small bold mb">PÓDIO</p><div id="pfpod"></div></div>
+    <button class="btn btn-p full" onclick="go('home')">Jogar outro quiz</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
