@@ -112,15 +112,7 @@
   <div class="play-pbar"><div class="play-pfill" id="plprog"></div></div>
 
   <!-- MUSIC PLAYER (shown for music questions) -->
-  <div id="pl-music" class="music-player" style="display:none">
-    <div class="mp-icon">🎵</div>
-    <div class="mp-info">
-      <div class="mp-label">Ouça o trecho e responda!</div>
-      <div class="mp-bar"><div class="mp-fill" id="pl-mp-fill"></div></div>
-    </div>
-    <audio id="pl-audio" preload="auto"></audio>
-    <button class="mp-play-btn" id="pl-play-btn" onclick="toggleAudio('pl-audio','pl-play-btn','pl-mp-fill')">▶ Ouvir</button>
-  </div>
+  <div id="pl-music" class="music-player" style="display:none;flex-direction:column;width:100%;max-width:700px"></div>
 
   <!-- PHOTO GRID (shown for photo questions) -->
   <div id="pl-photos" class="photo-grid" style="display:none"></div>
@@ -263,15 +255,7 @@
   <div class="play-pbar"><div class="play-pfill" id="ghprog"></div></div>
 
   <!-- MUSIC HOST -->
-  <div id="gh-music" class="music-player" style="display:none">
-    <div class="mp-icon">🎵</div>
-    <div class="mp-info">
-      <div class="mp-label">Quiz de Música</div>
-      <div class="mp-bar"><div class="mp-fill" id="gh-mp-fill"></div></div>
-    </div>
-    <audio id="gh-audio" preload="auto"></audio>
-    <button class="mp-play-btn" id="gh-play-btn" onclick="toggleAudio('gh-audio','gh-play-btn','gh-mp-fill')">▶ Tocar</button>
-  </div>
+  <div id="gh-music" class="music-player" style="display:none;flex-direction:column;width:100%;max-width:700px"></div>
 
   <!-- PHOTO HOST -->
   <div id="gh-photos" class="photo-grid host" style="display:none"></div>

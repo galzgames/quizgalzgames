@@ -161,7 +161,7 @@ function addQ(type) {
   const q = { type };
   if(type==='text')  { q.text=''; q.options=['','','','']; q.correct=0; }
   if(type==='photo') { q.text='Escolha a foto correta:'; q.photos=['','','','']; q.labels=['','','','']; q.correct=0; }
-  if(type==='music') { q.text='Que música é essa?'; q.audioUrl=''; q.options=['','','','']; q.correct=0; }
+  if(type==='music') { q.text='Que música é essa?'; q.audioUrl=''; q.youtubeId=''; q.youtubeStart=0; q.youtubeEnd=30; q.youtubeUrl=''; q.options=['','','','']; q.correct=0; }
   S.editQs.push(q);
   renderQEditor();
   setTimeout(()=>{ const el=document.getElementById('ql'); if(el) el.scrollTop=el.scrollHeight; },100);
@@ -209,36 +209,169 @@ function renderQEditor() {
       <div class="cbtns">${'ABCD'.split('').map((l,li)=>`<button class="cbtn ${q.correct===li?'on':''}" onclick="setCorr(${qi},${li})">${l}</button>`).join('')}</div>
     </div>`;
 
-    if(type==='music') return `<div class="q-ec q-type-music">${header}
-      <div class="clbl">🎵 Link direto do áudio</div>
-      <input class="einput" value="${esc(q.audioUrl||'')}" placeholder="Cole o link direto do áudio (.mp3, .ogg, etc.)" oninput="S.editQs[${qi}].audioUrl=this.value" style="margin-bottom:.5rem">
-      ${q.audioUrl ? `<audio src="${q.audioUrl}" controls style="width:100%;height:34px;margin-bottom:.7rem;border-radius:8px;accent-color:#8B44C9"></audio>`
-        : `<div style="font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:.7rem;line-height:1.7;padding:.5rem .75rem;background:rgba(255,255,255,.04);border-radius:8px">
-            💡 <strong style="color:rgba(255,255,255,.55)">Onde hospedar grátis:</strong><br>
-            • <a href="https://drive.google.com" target="_blank" style="color:#C084FC">Google Drive</a> → botão direito → "Obter link" → altere para acesso público → use o link direto<br>
-            • <a href="https://soundcloud.com" target="_blank" style="color:#C084FC">SoundCloud</a> → copie o link da faixa<br>
-            • <a href="https://archive.org" target="_blank" style="color:#C084FC">Archive.org</a> → upload e copie o link .mp3
-           </div>`}
+    if(type==='music') {
+      const ytId    = q.youtubeId    || '';
+      const ytStart = q.youtubeStart || 0;
+      const ytEnd   = q.youtubeEnd   || 30;
+      const mp3Url  = q.audioUrl     || '';
+      return `<div class="q-ec q-type-music">${header}
+
+      <div class="yt-search-box" id="ytsb-${qi}">
+        <div class="clbl">🔍 Buscar no YouTube</div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+          <input class="einput" id="ytsearch-${qi}" placeholder="Ex: Mario Bros theme, Tetris OST..." style="flex:1" onkeydown="if(event.key==='Enter')searchYT(${qi})">
+          <button onclick="searchYT(${qi})" style="background:var(--a0);color:#fff;border:none;border-radius:8px;padding:.5rem .9rem;font-family:var(--font);font-size:.82rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Buscar</button>
+        </div>
+        <div id="ytresults-${qi}" class="yt-results"></div>
+      </div>
+
+      ${ytId ? `
+      <div class="yt-selected-box">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem">
+          <img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" style="width:80px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0">
+          <div style="flex:1">
+            <div style="font-size:.8rem;font-weight:700;color:#C084FC;margin-bottom:.2rem">YouTube selecionado ✓</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.45)">ID: ${ytId}</div>
+          </div>
+          <button onclick="clearYT(${qi})" style="background:rgba(220,50,50,.2);color:#FF8870;border:1px solid rgba(220,50,50,.3);border-radius:6px;padding:.3rem .6rem;font-size:.75rem;cursor:pointer">✕ Trocar</button>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <div style="font-size:.75rem;color:rgba(255,255,255,.45);flex-shrink:0">Trecho (segundos):</div>
+          <div style="display:flex;align-items:center;gap:.4rem">
+            <span style="font-size:.72rem;color:rgba(255,255,255,.35)">início</span>
+            <input type="number" value="${ytStart}" min="0" style="width:60px;padding:.3rem .4rem;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#fff;font-size:.8rem;text-align:center" onchange="S.editQs[${qi}].youtubeStart=+this.value">
+            <span style="font-size:.72rem;color:rgba(255,255,255,.35)">fim</span>
+            <input type="number" value="${ytEnd}" min="1" style="width:60px;padding:.3rem .4rem;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#fff;font-size:.8rem;text-align:center" onchange="S.editQs[${qi}].youtubeEnd=+this.value">
+          </div>
+        </div>
+      </div>` : `
+      <div style="display:flex;align-items:center;gap:.5rem;margin:.4rem 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+        <span style="font-size:.72rem;color:rgba(255,255,255,.25)">ou cole um link</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+      </div>
+      <div class="clbl">▶ Link do YouTube</div>
+      <input class="einput" value="${esc(q.youtubeUrl||'')}" placeholder="https://youtube.com/watch?v=..." oninput="setYoutubeUrl(${qi},this.value)" style="margin-bottom:.6rem">
+      <div class="clbl">🎵 Link direto de MP3</div>
+      <input class="einput" value="${esc(mp3Url)}" placeholder="https://...arquivo.mp3" oninput="setMp3Url(${qi},this.value)" style="margin-bottom:.4rem">
+      ${mp3Url ? `<audio src="${mp3Url}" controls style="width:100%;height:32px;margin-bottom:.5rem;border-radius:6px;accent-color:#8B44C9"></audio>` : ''}`}
+
       ${q.options.map((o,oi)=>`
-        <div class="orow">
+        <div class="orow" style="margin-top:${oi===0?'.75rem':'0'}">
           <div class="obadge ob${oi}">${SHAPES[oi]}</div>
           <input class="einput" value="${esc(o)}" placeholder="Opção ${'ABCD'[oi]}..." oninput="S.editQs[${qi}].options[${oi}]=this.value">
         </div>`).join('')}
       <div class="clbl">Resposta correta:</div>
       <div class="cbtns">${'ABCD'.split('').map((l,li)=>`<button class="cbtn ${q.correct===li?'on':''}" onclick="setCorr(${qi},${li})">${l}</button>`).join('')}</div>
     </div>`;
+    }
 
     return '';
   }).join('');
+}
+
+// ── YOUTUBE SEARCH & HELPERS ─────────────────────────
+// Instâncias Invidious públicas — tenta em ordem até uma funcionar
+const INV_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.privacydev.net',
+  'https://iv.datura.network',
+  'https://invidious.fdn.fr',
+  'https://invidious.nerdvpn.de'
+];
+
+async function searchYT(qi) {
+  const query = document.getElementById(`ytsearch-${qi}`).value.trim();
+  if(!query) return notify('Digite algo para buscar','err');
+  const el = document.getElementById(`ytresults-${qi}`);
+  el.innerHTML = '<div class="yt-loading">🔍 Buscando...</div>';
+
+  const fields = 'videoId,title,author,lengthSeconds';
+  const encoded = encodeURIComponent(query);
+
+  for(const base of INV_INSTANCES) {
+    try {
+      const url = `${base}/api/v1/search?q=${encoded}&type=video&fields=${fields}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if(!res.ok) continue;
+      const data = await res.json();
+      if(!Array.isArray(data) || !data.length) {
+        el.innerHTML='<div class="yt-loading">Nenhum resultado encontrado. Tente outra busca.</div>';
+        return;
+      }
+      el.innerHTML = data.slice(0,7).map(v => {
+        const safeTitle = v.title.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="yt-result-item" onclick="selectYT(${qi},'${v.videoId}','${safeTitle}')">
+          <img src="https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg" class="yt-thumb" alt="" onerror="this.style.display='none'">
+          <div class="yt-result-info">
+            <div class="yt-result-title">${esc(v.title)}</div>
+            <div class="yt-result-ch">${esc(v.author||'')} ${v.lengthSeconds ? '· '+fmtSec(v.lengthSeconds) : ''}</div>
+          </div>
+          <div class="yt-pick-btn">Usar ▶</div>
+        </div>`;
+      }).join('');
+      return; // sucesso, para de tentar
+    } catch(e) {
+      continue; // tenta próxima instância
+    }
+  }
+  // Todas falharam
+  el.innerHTML = `<div class="yt-loading" style="color:#FF8870">
+    Busca indisponível no momento.<br>
+    <span style="font-size:.72rem;opacity:.7">Cole o link do YouTube diretamente no campo abaixo.</span>
+  </div>`;
+}
+
+function fmtSec(s) {
+  if(!s) return '';
+  const m = Math.floor(s/60), sec = s%60;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function selectYT(qi, videoId, title) {
+  S.editQs[qi].youtubeId    = videoId;
+  S.editQs[qi].youtubeStart = S.editQs[qi].youtubeStart || 0;
+  S.editQs[qi].youtubeEnd   = S.editQs[qi].youtubeEnd   || 30;
+  S.editQs[qi].youtubeUrl   = '';
+  S.editQs[qi].audioUrl     = '';
+  if(S.editQs[qi].options.every(o=>!o.trim())) S.editQs[qi].options[0] = title;
+  notify('Música selecionada! ✓');
+  renderQEditor();
+  setTimeout(()=>{ const el=document.getElementById('ql'); if(el) el.scrollTop=el.scrollHeight; },100);
+}
+
+function clearYT(qi) {
+  S.editQs[qi].youtubeId = '';
+  S.editQs[qi].youtubeUrl = '';
+  renderQEditor();
+}
+
+function setYoutubeUrl(qi, url) {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if(match) {
+    S.editQs[qi].youtubeId    = match[1];
+    S.editQs[qi].youtubeUrl   = url;
+    S.editQs[qi].youtubeStart = S.editQs[qi].youtubeStart || 0;
+    S.editQs[qi].youtubeEnd   = S.editQs[qi].youtubeEnd   || 30;
+    S.editQs[qi].audioUrl     = '';
+    notify('Link do YouTube detectado! ✓');
+    renderQEditor();
+  } else {
+    S.editQs[qi].youtubeUrl = url;
+    S.editQs[qi].youtubeId  = '';
+  }
+}
+
+function setMp3Url(qi, url) {
+  S.editQs[qi].audioUrl   = url.trim();
+  S.editQs[qi].youtubeId  = '';
+  S.editQs[qi].youtubeUrl = '';
 }
 
 // ── LINK HELPERS ─────────────────────────────────────
 function setPhoto(qi, oi, url) {
   if(!S.editQs[qi].photos) S.editQs[qi].photos=['','','',''];
   S.editQs[qi].photos[oi] = url.trim();
-  // Update preview image if already rendered
-  const imgs = document.querySelectorAll(`#ql .q-ec:nth-child(${qi+1}) img`);
-  if(imgs[oi]) imgs[oi].src = url.trim();
 }
 
 function saveQuiz() {
@@ -249,7 +382,7 @@ function saveQuiz() {
     if(!q.text.trim()) return notify('Preencha o texto de todas as perguntas','err');
     if(q.type==='text'&&q.options.some(o=>!o.trim())) return notify('Preencha todas as opções de texto','err');
     if(q.type==='photo'&&(!q.photos||q.photos.filter(p=>p.trim()).length<4)) return notify('Cole links para todas as 4 fotos','err');
-    if(q.type==='music'&&!q.audioUrl.trim()) return notify('Cole o link do áudio','err');
+    if(q.type==='music'&&!q.youtubeId&&!q.audioUrl) return notify('Adicione uma música (busque no YouTube ou cole um link)','err');
     if(q.type==='music'&&q.options.some(o=>!o.trim())) return notify('Preencha as opções da pergunta musical','err');
   }
   const quiz={title,questions:JSON.parse(JSON.stringify(S.editQs))};
@@ -303,15 +436,39 @@ async function renderHostQ() {
   document.getElementById('ghreveal').style.display='none';
 
   const type=q.type||'text';
-  // Music
+  // Music — YouTube or audio URL
   const ghm=document.getElementById('gh-music');
   if(type==='music') {
     ghm.style.display='flex';
-    const a=document.getElementById('gh-audio'); a.src=q.audioUrl; a.load();
-    document.getElementById('gh-play-btn').textContent='▶ Tocar';
-    document.getElementById('gh-play-btn').className='mp-play-btn';
-    document.getElementById('gh-mp-fill').style.width='0%';
-  } else ghm.style.display='none';
+    if(q.youtubeId) {
+      // Replace music player with YouTube embed
+      const start = q.youtubeStart||0, end = q.youtubeEnd||30;
+      ghm.innerHTML=`
+        <div style="width:100%;max-width:700px">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem">
+            <div class="mp-icon">🎵</div>
+            <div class="mp-info"><div class="mp-label">Ouça o trecho e responda!</div></div>
+          </div>
+          <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/6">
+            <iframe id="gh-yt-frame"
+              src="https://www.youtube.com/embed/${q.youtubeId}?start=${start}&end=${end}&autoplay=1&controls=1&rel=0&modestbranding=1"
+              style="width:100%;height:100%;border:none"
+              allow="autoplay; encrypted-media" allowfullscreen>
+            </iframe>
+          </div>
+          <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:.3rem;text-align:center">Trecho: ${start}s → ${end}s</div>
+        </div>`;
+    } else {
+      ghm.innerHTML=`
+        <div class="mp-icon">🎵</div>
+        <div class="mp-info"><div class="mp-label">Ouça o trecho e responda!</div><div class="mp-bar"><div class="mp-fill" id="gh-mp-fill"></div></div></div>
+        <audio id="gh-audio" src="${q.audioUrl||''}" preload="auto"></audio>
+        <button class="mp-play-btn" id="gh-play-btn" onclick="toggleAudio('gh-audio','gh-play-btn','gh-mp-fill')">▶ Tocar</button>`;
+      setTimeout(()=>{
+        const a=document.getElementById('gh-audio'); if(a){ a.src=q.audioUrl||''; a.load(); }
+      },100);
+    }
+  } else { ghm.style.display='none'; ghm.innerHTML=''; }
 
   // Photo
   const ghp=document.getElementById('gh-photos');
@@ -502,15 +659,36 @@ function renderPlayerQ(room) {
   document.getElementById('plpts').textContent=S.score+' pts';
   document.getElementById('plfb').style.display='none';
 
-  // Music player
+  // Music player — YouTube or audio URL
   const plm=document.getElementById('pl-music');
   if(type==='music') {
     plm.style.display='flex';
-    const a=document.getElementById('pl-audio'); a.src=q.audioUrl; a.load();
-    document.getElementById('pl-play-btn').textContent='▶ Ouvir';
-    document.getElementById('pl-play-btn').className='mp-play-btn';
-    document.getElementById('pl-mp-fill').style.width='0%';
-  } else plm.style.display='none';
+    if(q.youtubeId) {
+      const start=q.youtubeStart||0, end=q.youtubeEnd||30;
+      plm.innerHTML=`
+        <div style="width:100%">
+          <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.45rem">
+            <div class="mp-icon">🎵</div>
+            <div class="mp-info"><div class="mp-label">Ouça e responda!</div></div>
+          </div>
+          <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/6">
+            <iframe src="https://www.youtube.com/embed/${q.youtubeId}?start=${start}&end=${end}&autoplay=1&controls=1&rel=0&modestbranding=1"
+              style="width:100%;height:100%;border:none"
+              allow="autoplay; encrypted-media" allowfullscreen>
+            </iframe>
+          </div>
+        </div>`;
+    } else {
+      plm.innerHTML=`
+        <div class="mp-icon">🎵</div>
+        <div class="mp-info"><div class="mp-label">Ouça e responda!</div><div class="mp-bar"><div class="mp-fill" id="pl-mp-fill"></div></div></div>
+        <audio id="pl-audio" src="${q.audioUrl||''}" preload="auto"></audio>
+        <button class="mp-play-btn" id="pl-play-btn" onclick="toggleAudio('pl-audio','pl-play-btn','pl-mp-fill')">▶ Ouvir</button>`;
+      setTimeout(()=>{
+        const a=document.getElementById('pl-audio'); if(a){ a.src=q.audioUrl||''; a.load(); }
+      },100);
+    }
+  } else { plm.style.display='none'; plm.innerHTML=''; }
 
   // Photo grid
   const plp=document.getElementById('pl-photos');
@@ -609,8 +787,9 @@ function listenForNext(qIdx) {
 
 function showPlayerFinal(room) {
   stopTimer(); stopListen();
-  // Stop any audio
+  // Stop audio and YouTube iframes
   ['pl-audio','gh-audio'].forEach(id=>{ try { const a=document.getElementById(id); if(a){ a.pause(); a.currentTime=0; } } catch(e){} });
+  ['pl-music','gh-music'].forEach(id=>{ try { const el=document.getElementById(id); if(el){ const f=el.querySelector('iframe'); if(f) f.src=''; } } catch(e){} });
   const sorted=Object.entries(room.players||{}).sort((a,b)=>b[1].score-a[1].score);
   const pos=sorted.findIndex(([n])=>n===S.name)+1;
   const icns=['🥇','🥈','🥉','🎉','🙂','😊'];

@@ -334,3 +334,18 @@ html,body{height:100%;font-family:var(--font);background:var(--dark);color:var(-
   .logo-text{font-size:2rem}
   .add-menu{flex-direction:column}
 }
+
+/* ══ YOUTUBE SEARCH ══ */
+.yt-search-box{margin-bottom:.75rem}
+.yt-results{display:flex;flex-direction:column;gap:.4rem;max-height:280px;overflow-y:auto;margin-top:.4rem}
+.yt-results::-webkit-scrollbar{width:3px}
+.yt-results::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.yt-loading{font-size:.8rem;color:rgba(255,255,255,.4);padding:.5rem;text-align:center}
+.yt-result-item{display:flex;align-items:center;gap:.65rem;padding:.5rem .6rem;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:.15s}
+.yt-result-item:hover{background:rgba(139,68,201,.18);border-color:rgba(139,68,201,.4)}
+.yt-thumb{width:64px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0}
+.yt-result-info{flex:1;min-width:0}
+.yt-result-title{font-size:.8rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yt-result-ch{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.15rem}
+.yt-pick-btn{background:var(--violet2);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.75rem;font-weight:800;flex-shrink:0;white-space:nowrap}
+.yt-selected-box{background:rgba(139,68,201,.12);border:1.5px solid rgba(139,68,201,.4);border-radius:10px;padding:.75rem;margin-bottom:.65rem}
