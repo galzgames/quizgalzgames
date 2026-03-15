@@ -725,14 +725,28 @@ function renderPlayerQ(room) {
 async function playerAns(choice,qIdx) {
   if(S.answered) return;
   S.answered=true; stopTimer();
-  // Disable all interactive options
+  stopMediaPlayback(); // para YouTube e áudio ao responder
   document.querySelectorAll('#plopts .abt, #pl-photos .photo-opt').forEach((b,i)=>{ b.disabled=true; if(i===choice) b.classList.add('chosen'); });
   try { await dbSet(`rooms/${S.code}/answers/${S.name}`,{choice,time:S.timerLeft}); } catch(e){}
 }
 
 async function playerTimeout(qIdx) {
   if(S.answered) return; S.answered=true;
+  stopMediaPlayback(); // para YouTube e áudio ao acabar o tempo
   try { await dbSet(`rooms/${S.code}/answers/${S.name}`,{choice:-1,time:0}); } catch(e){}
+}
+
+function stopMediaPlayback() {
+  // Para áudio MP3
+  try {
+    const a = document.getElementById('pl-audio');
+    if(a){ a.pause(); a.currentTime=0; }
+  } catch(e){}
+  // Para YouTube — substitui src do iframe por vazio (única forma confiável)
+  try {
+    const frame = document.querySelector('#pl-music iframe');
+    if(frame){ frame.src=''; }
+  } catch(e){}
 }
 
 function listenForReveal(qIdx) {
