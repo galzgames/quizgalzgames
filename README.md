@@ -1,92 +1,67 @@
-# 🎮 Galz Games Quiz
+# 🎮 Galz Games Quiz — v4 (Foto + Música)
 
-Quiz ao vivo estilo Kahoot — funciona entre qualquer dispositivo via Firebase.
+Quiz ao vivo com 3 tipos de pergunta: **Texto**, **Foto** e **Música**.
+
+## Novidades desta versão
+
+- **📸 Quiz de Foto**: 4 imagens como opções de resposta — jogadores clicam na foto correta
+- **🎵 Quiz de Música**: Admin faz upload de um trecho de áudio + 4 opções de texto para adivinhar
+- **📝 Quiz de Texto**: igual antes, 4 opções de texto
+- O admin pode **misturar** os 3 tipos no mesmo quiz!
 
 ---
 
-## 🔥 Configurar Firebase (OBRIGATÓRIO para internet)
+## 🔥 Firebase — Configuração adicional para fotos e músicas
 
-### 1. Criar projeto Firebase (grátis)
-1. Acesse: https://console.firebase.google.com
-2. Clique em **"Adicionar projeto"**
-3. Dê um nome (ex: `galzgames`) → Continuar → Criar projeto
+Além do Realtime Database, você precisa ativar o **Firebase Storage** para uploads.
 
-### 2. Criar o Banco de Dados
-1. No menu lateral, clique em **Realtime Database**
-2. Clique em **"Criar banco de dados"**
-3. Escolha a localização (ex: Estados Unidos) → Avançar
-4. Selecione **"Iniciar no modo de teste"** → Ativar
+### 1. Ativar Storage
+1. No Firebase Console → **Compilação → Storage**
+2. Clique em **"Primeiros passos"**
+3. Escolha **"Iniciar no modo de teste"** → Avançar → Concluído
 
-### 3. Abrir as regras (para funcionar)
-1. Ainda no Realtime Database, clique na aba **"Regras"**
-2. Substitua o conteúdo por:
-```json
-{
-  "rules": {
-    ".read": true,
-    ".write": true
+### 2. Regras do Storage
+Na aba **Regras** do Storage, substitua por:
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
   }
 }
 ```
-3. Clique em **Publicar**
-
-### 4. Obter as configurações
-1. Clique na engrenagem ⚙️ → **Configurações do projeto**
-2. Role para baixo até **"Seus apps"**
-3. Clique em **"Adicionar app"** → ícone Web `</>`
-4. Dê um apelido → **Registrar app**
-5. Copie os valores do objeto `firebaseConfig`
-
-### 5. Configurar no site
-1. Acesse seu site no GitHub Pages
-2. Clique em **"Criar / Gerenciar"** → faça login (admin/1234)
-3. Clique em **⚙️ Firebase** no dashboard
-4. Cole os valores copiados → **Salvar e Conectar**
-
-> A configuração fica salva no navegador do admin. Só precisa fazer isso uma vez por dispositivo.
+Clique em **Publicar**.
 
 ---
 
 ## 🚀 Publicar no GitHub Pages
 
-1. Crie um repositório público em github.com
-2. Faça upload dos 3 arquivos: `index.html`, `style.css`, `app.js`
-3. Settings → Pages → Branch: main → Save
-4. Acesse: `https://SEU-USUARIO.github.io/NOME-DO-REPO`
+1. Substitua os 3 arquivos antigos pelos novos: `index.html`, `style.css`, `app.js`
+2. O site já vai estar disponível no mesmo link de antes
 
 ---
 
-## 🎯 Como jogar
+## 🎯 Como criar quiz de foto
 
-**Admin (host):**
-1. Acesse o site → "Criar / Gerenciar" → login: `admin` / `1234`
-2. Configure o Firebase (primeiro acesso)
-3. Crie ou edite um quiz
-4. Clique **▶ Iniciar** → compartilhe o código
-5. Quando todos entrarem → clique **Iniciar!**
-6. As perguntas avançam automaticamente com contagem regressiva
-7. Ao final, clique **🏆 Ver Resultados Finais** quando quiser
+1. No editor → clique **"+ Adicionar Pergunta"** → **📸 Foto**
+2. Escreva a pergunta (ex: "Quem é essa pessoa?")
+3. Clique em cada área para enviar uma foto (JPG/PNG, máx 5MB cada)
+4. Opcionalmente adicione legenda em cada foto
+5. Selecione qual foto é a correta (A/B/C/D)
 
-**Jogadores (qualquer dispositivo):**
-1. Acessam o mesmo site
-2. Clicam em **"Entrar no Quiz"**
-3. Digitam o código → apelido → **Entrar no jogo!**
+## 🎵 Como criar quiz de música
+
+1. No editor → **"+ Adicionar Pergunta"** → **🎵 Música**
+2. Escreva a pergunta (ex: "Que música é essa?")
+3. Clique para enviar o trecho de áudio (MP3/OGG, máx 10MB)
+4. Preencha as 4 opções de resposta (nome das músicas/artistas)
+5. Selecione a opção correta
 
 ---
 
-## 🔧 Personalizar
-
-**Tempo por pergunta** (`app.js`, linha 9):
-```js
-const TIMER_SEC = 20;
-```
-
-**Tempo entre perguntas** (`app.js`, linha 10):
-```js
-const REVEAL_SEC = 5;
-```
-
-**Senha do admin** (`app.js`):
-```js
-if (u === 'admin' && p === '1234') {
-```
+## ⚠️ Limites do plano gratuito Firebase (Spark)
+- Storage: **5 GB** de armazenamento
+- Download: **1 GB/dia**
+- Para uso casual/eventos, é mais que suficiente!
