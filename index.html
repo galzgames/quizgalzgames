@@ -78,11 +78,8 @@
     <div class="play-pts" id="plpts">0 pts</div>
   </div>
   <div class="play-pbar"><div class="play-pfill" id="plprog"></div></div>
-  <div class="qbox" id="plqbox">
-    <p class="qtext" id="plq">...</p>
-  </div>
+  <div class="qbox"><p class="qtext" id="plq">...</p></div>
   <div class="ans-grid" id="plopts"></div>
-  <!-- feedback overlay (shown after answering, hides options) -->
   <div id="plfb" class="fb-overlay" style="display:none">
     <div class="fb-card" id="plfbcard">
       <div class="fb-emoji" id="plicon"></div>
@@ -126,12 +123,41 @@
   </div>
 </div>
 
+<!-- FIREBASE SETUP (shown if not configured) -->
+<div id="firebase-setup" class="screen bg-violet">
+  <div class="kcard" style="max-width:500px">
+    <div class="kcard-brand">🔧 Configuração Firebase</div>
+    <h2 class="kcard-title" style="font-size:1.2rem">Configure o banco de dados</h2>
+    <p style="font-size:.82rem;color:#666;text-align:center;margin-bottom:1.2rem;line-height:1.6">
+      Cole as configurações do seu projeto Firebase abaixo.<br>
+      <a href="https://console.firebase.google.com" target="_blank" style="color:var(--violet2)">Acesse console.firebase.google.com</a>
+    </p>
+    <div class="kfield"><label class="klabel" style="color:#555">apiKey</label><input id="fb-apikey" class="kinput" placeholder="AIzaSy..."></div>
+    <div class="kfield"><label class="klabel" style="color:#555">authDomain</label><input id="fb-authdomain" class="kinput" placeholder="projeto.firebaseapp.com"></div>
+    <div class="kfield"><label class="klabel" style="color:#555">databaseURL</label><input id="fb-dburl" class="kinput" placeholder="https://projeto-default-rtdb.firebaseio.com"></div>
+    <div class="kfield"><label class="klabel" style="color:#555">projectId</label><input id="fb-projectid" class="kinput" placeholder="meu-projeto"></div>
+    <button class="btn btn-violet full" onclick="saveFirebaseConfig()">Salvar e Conectar</button>
+    <div style="margin-top:1rem;background:#f5f5f5;border-radius:8px;padding:.9rem">
+      <p style="font-size:.75rem;color:#555;font-weight:700;line-height:1.7">
+        📋 Como obter:<br>
+        1. <a href="https://console.firebase.google.com" target="_blank" style="color:var(--violet2)">console.firebase.google.com</a><br>
+        2. Criar projeto → Adicionar app Web<br>
+        3. Copiar as configurações acima<br>
+        4. Ir em Realtime Database → Criar<br>
+        5. Regras → mudar para <code style="background:#e0e0e0;padding:1px 4px;border-radius:3px">true</code>
+      </p>
+    </div>
+    <button class="klink" style="color:#888" onclick="go('home')">← Voltar sem configurar</button>
+  </div>
+</div>
+
 <!-- DASHBOARD -->
 <div id="dashboard" class="screen bg-dark">
   <div class="dash">
     <div class="dash-hd">
       <div class="dbrand">🎮 Galz Games Quiz</div>
       <div class="dash-acts">
+        <button class="btn btn-ghost sm" onclick="go('firebase-setup')" title="Configurar Firebase">⚙️ Firebase</button>
         <button class="btn btn-green sm" onclick="newQuiz()">+ Novo Quiz</button>
         <button class="btn btn-ghost sm" onclick="go('home')">Sair</button>
       </div>
@@ -163,8 +189,9 @@
       <button class="btn btn-ghost sm" onclick="cancelRoom()">Cancelar</button>
     </div>
     <div class="lobby-code-section">
-      <div class="lcs-lbl">Entre em <strong>galzgames</strong> e use o código:</div>
+      <div class="lcs-lbl">Entre no site e use o código:</div>
       <div class="lobby-code" id="lcode">------</div>
+      <div class="lcs-sub" id="lsite-url"></div>
     </div>
     <div class="lobby-players">
       <div class="lp-count-wrap">
@@ -173,7 +200,7 @@
       </div>
       <div id="lplayers" class="lp-chips"></div>
     </div>
-    <button class="btn btn-violet xl full" id="startbtn" onclick="startGame()">Iniciar!</button>
+    <button class="btn btn-violet xl full" onclick="startGame()">Iniciar!</button>
   </div>
 </div>
 
@@ -185,22 +212,21 @@
       <svg viewBox="0 0 56 56"><circle class="tr-bg" cx="28" cy="28" r="24"/><circle class="tr-fg" id="ghring" cx="28" cy="28" r="24" stroke-dasharray="151" stroke-dashoffset="0"/></svg>
       <div class="ptimer-num" id="ghtimer">20</div>
     </div>
-    <div class="play-pts" id="ghans" style="font-size:.85rem;color:rgba(255,255,255,.6)">0 resp.</div>
+    <div class="play-pts" id="ghans" style="font-size:.82rem;color:rgba(255,255,255,.6)">0 resp.</div>
   </div>
   <div class="play-pbar"><div class="play-pfill" id="ghprog"></div></div>
-  <div class="qbox host">
-    <p class="qtext" id="ghq"></p>
-  </div>
+  <div class="qbox host"><p class="qtext" id="ghq"></p></div>
   <div class="ans-grid host" id="ghopts"></div>
-  <!-- reveal panel (shown after timer, auto-advance) -->
   <div id="ghreveal" class="host-reveal" style="display:none">
     <div class="live-rank-box">
       <div class="lr-lbl">Placar ao vivo</div>
       <div id="ghrank"></div>
     </div>
     <div class="reveal-footer">
-      <div class="reveal-next-msg" id="gh-next-msg">Próxima pergunta em <span id="gh-countdown">5</span>s</div>
-      <button class="btn btn-violet xl full" id="ghnext" onclick="nextQ()">Ver Resultados Finais 🏆</button>
+      <div class="reveal-next-msg" id="gh-next-msg" style="display:none">
+        Próxima em <span id="gh-countdown">5</span>s
+      </div>
+      <button class="btn btn-violet xl full mt" id="ghnext" style="display:none" onclick="hostClickFinal()">🏆 Ver Resultados Finais</button>
     </div>
   </div>
 </div>
@@ -211,9 +237,7 @@
     <div class="fbrand">🎮 Galz Games Quiz</div>
     <div class="final-emoji">🏆</div>
     <h1 class="final-h big">Fim do Quiz!</h1>
-    <div class="podium-wrap">
-      <div class="podium" id="finpod"></div>
-    </div>
+    <div class="podium-wrap"><div class="podium" id="finpod"></div></div>
     <div id="finwinner" class="winner-box" style="display:none">
       <div class="wb-crown">👑</div>
       <div class="wb-lbl">Vencedor</div>
@@ -231,6 +255,9 @@
   </div>
 </div>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
