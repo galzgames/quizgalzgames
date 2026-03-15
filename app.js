@@ -10,7 +10,7 @@ const FIREBASE_CONFIG = {
   authDomain:    "quiz-e0e90.firebaseapp.com",
   databaseURL:   "https://quiz-e0e90-default-rtdb.firebaseio.com",
   projectId:     "quiz-e0e90",
-  storageBucket: "quiz-e0e90.appspot.com"
+  storageBucket: "quiz-e0e90.firebasestorage.app"
 };
 // ▲▲▲ SE TROCAR DE PROJETO FIREBASE, ATUALIZE OS VALORES ACIMA ▲▲▲
 
@@ -65,7 +65,7 @@ function saveFirebaseConfig() {
     authDomain:    document.getElementById('fb-authdomain').value.trim(),
     databaseURL:   document.getElementById('fb-dburl').value.trim(),
     projectId:     document.getElementById('fb-projectid').value.trim(),
-    storageBucket: document.getElementById('fb-projectid').value.trim() + '.appspot.com'
+    storageBucket: document.getElementById('fb-projectid').value.trim() + '.firebasestorage.app'
   };
   if (!cfg.apiKey || !cfg.databaseURL) { notify('Preencha apiKey e databaseURL','err'); return; }
   if (initFirebase(cfg)) {
