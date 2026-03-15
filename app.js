@@ -1,18 +1,25 @@
 // ══════════════════════════════════════════════════
 //  Galz Games Quiz — app.js
-//  Tipos: texto, foto (4 imagens), música (áudio + 4 opções)
-//  Backend: Firebase Realtime Database + Storage
+//  Upload: ImgBB (fotos) + Cloudinary (audio)
+//  Backend: Firebase Realtime Database
 // ══════════════════════════════════════════════════
 
-// ▼▼▼ CONFIGURAÇÃO FIREBASE — funciona em qualquer dispositivo ▼▼▼
+// FIREBASE CONFIG
 const FIREBASE_CONFIG = {
   apiKey:        "AIzaSyBIQWna0NgqbmGsNwtt_UITLXPMANKn3CA",
   authDomain:    "quiz-e0e90.firebaseapp.com",
   databaseURL:   "https://quiz-e0e90-default-rtdb.firebaseio.com",
-  projectId:     "quiz-e0e90",
-  storageBucket: "quiz-e0e90.firebasestorage.app"
+  projectId:     "quiz-e0e90"
 };
-// ▲▲▲ SE TROCAR DE PROJETO FIREBASE, ATUALIZE OS VALORES ACIMA ▲▲▲
+
+// IMGBB — fotos gratuitas (imgbb.com -> API)
+// Cole sua chave aqui depois de criar conta
+let IMGBB_API_KEY = localStorage.getItem('imgbb_key') || '';
+
+// CLOUDINARY — audio gratuito (cloudinary.com)
+// Cole seu cloud name e upload preset aqui
+let CLOUDINARY_CLOUD  = localStorage.getItem('cloudinary_cloud') || '';
+let CLOUDINARY_PRESET = localStorage.getItem('cloudinary_preset') || '';
 
 const TIMER_SEC  = 20;
 const REVEAL_SEC = 5;
@@ -22,7 +29,7 @@ const AV_COLORS  = ['#E21B3C','#1368CE','#26890C','#D89E00','#8B44C9','#D45C00',
 const QUIZ_KEY   = 'galzgames_quizzes_v4';
 const FB_CFG_KEY = 'galzgames_firebase_cfg';
 
-let db = null, storage = null;
+let db = null;
 let S = {
   quizzes: loadQuizzes(),
   editQs: [], editIdx: -1,
@@ -40,7 +47,7 @@ function initFirebase(cfg) {
     if (firebase.apps && firebase.apps.length) firebase.apps.forEach(a => { try { a.delete(); } catch(e){} });
     firebase.initializeApp(cfg);
     db = firebase.database();
-    storage = firebase.storage();
+    // Storage not used — using ImgBB + Cloudinary instead
     return true;
   } catch(e) { console.error(e); return false; }
 }
@@ -82,10 +89,28 @@ function dbUpdate(p,v)  { return db.ref(p).update(v); }
 function dbOff(r)       { if(r) r.off(); }
 function listen(p,cb)   { const r=db.ref(p); r.on('value',s=>cb(s.val())); return r; }
 
-async function uploadFile(file, path) {
-  const ref = storage.ref(path);
-  const snap = await ref.put(file);
-  return await snap.ref.getDownloadURL();
+// ── UPLOAD: ImgBB (fotos) + Cloudinary (audio) ─────
+async function uploadPhoto(file) {
+  if (!IMGBB_API_KEY) throw new Error('Configure a chave ImgBB nas configuracoes de upload');
+  const form = new FormData();
+  form.append('image', file);
+  form.append('key', IMGBB_API_KEY);
+  const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error?.message || 'Erro ImgBB');
+  return data.data.url;
+}
+
+async function uploadAudio(file) {
+  if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) throw new Error('Configure Cloudinary nas configuracoes de upload');
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', CLOUDINARY_PRESET);
+  form.append('resource_type', 'video'); // audio usa resource_type video no Cloudinary
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`, { method: 'POST', body: form });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.secure_url;
 }
 
 // ── UTIL ────────────────────────────────────────────
@@ -203,28 +228,38 @@ function renderQEditor() {
 
     if(type==='photo') return `<div class="q-ec q-type-photo">${header}
       ${(q.photos||['','','','']).map((url,oi)=>`
-        <div class="orow" style="align-items:flex-start;flex-direction:column;gap:.35rem">
+        <div class="orow" style="align-items:flex-start;flex-direction:column;gap:.4rem;margin-bottom:.65rem">
           <div style="display:flex;align-items:center;gap:.5rem;width:100%">
             <div class="obadge ob${oi}">${SHAPES[oi]}</div>
-            <label class="upload-area" style="flex:1">
-              ${url ? `<img src="${url}" class="upload-preview" alt="">` : '<span class="upload-placeholder">📸 Clique para enviar foto</span>'}
-              <input type="file" accept="image/*" onchange="handlePhotoUpload(event,${qi},${oi})">
-            </label>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);font-weight:700">Foto ${['A','B','C','D'][oi]}</span>
           </div>
-          <input class="einput" value="${esc((q.labels||[])[oi]||'')}" placeholder="Legenda da foto (opcional)..." oninput="S.editQs[${qi}].labels[${oi}]=this.value" style="margin-left:40px">
+          <div style="display:flex;gap:.5rem;width:100%;align-items:center">
+            ${url ? `<img src="${url}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0" alt="">` : ''}
+            <div style="flex:1;display:flex;flex-direction:column;gap:.3rem">
+              <label class="upload-area" style="cursor:pointer">
+                <span class="upload-placeholder">📤 Enviar arquivo</span>
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(event,${qi},${oi})">
+              </label>
+              <input class="einput" value="${esc(url)}" placeholder="— OU cole um link de imagem aqui —" oninput="handlePhotoLink(this.value,${qi},${oi})" style="font-size:.8rem">
+            </div>
+          </div>
+          <input class="einput" value="${esc((q.labels||[])[oi]||'')}" placeholder="Legenda (opcional)..." oninput="S.editQs[${qi}].labels[${oi}]=this.value" style="font-size:.82rem">
         </div>`).join('')}
       <div class="clbl">Foto correta:</div>
       <div class="cbtns">${'ABCD'.split('').map((l,li)=>`<button class="cbtn ${q.correct===li?'on':''}" onclick="setCorr(${qi},${li})">${l}</button>`).join('')}</div>
     </div>`;
 
     if(type==='music') return `<div class="q-ec q-type-music">${header}
-      <div class="music-upload-row">
-        <label class="upload-area" style="max-width:100%">
+      <div class="clbl">Áudio do trecho</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem">
+        <label class="upload-area" style="cursor:pointer">
           ${q.audioUrl
-            ? `<div class="music-preview">🎵 Áudio carregado — <a href="${q.audioUrl}" target="_blank" style="color:#C084FC">ouvir</a></div>`
-            : '<span class="upload-placeholder">🎵 Clique para enviar áudio (MP3/OGG)</span>'}
+            ? `<span class="upload-placeholder" style="color:#C084FC">🎵 Áudio carregado — clique para trocar</span>`
+            : '<span class="upload-placeholder">📤 Enviar áudio (MP3/OGG/WAV)</span>'}
           <input type="file" accept="audio/*" onchange="handleAudioUpload(event,${qi})">
         </label>
+        <input class="einput" value="${esc(q.audioUrl||'')}" placeholder="— OU cole um link direto de áudio MP3 aqui —" oninput="handleAudioLink(this.value,${qi})" style="font-size:.8rem">
+        ${q.audioUrl ? `<div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:.75rem;color:rgba(255,255,255,.45)">Preview:</span><audio src="${q.audioUrl}" controls style="height:28px;flex:1;opacity:.8"></audio></div>` : ''}
       </div>
       ${q.options.map((o,oi)=>`
         <div class="orow">
@@ -241,32 +276,59 @@ function renderQEditor() {
 
 // ── FILE UPLOADS ────────────────────────────────────
 async function handlePhotoUpload(event, qi, oi) {
-  if(!requireDB()) return;
   const file = event.target.files[0];
   if(!file) return;
-  if(file.size > 5*1024*1024) { notify('Foto muito grande (máx 5MB)','err'); return; }
+  if(file.size > 32*1024*1024) { notify('Foto muito grande (máx 32MB)','err'); return; }
   notify('Enviando foto...','info');
   try {
-    const url = await uploadFile(file, `quizzes/photos/${Date.now()}_${file.name}`);
+    const url = await uploadPhoto(file);
     if(!S.editQs[qi].photos) S.editQs[qi].photos=['','','',''];
     S.editQs[qi].photos[oi] = url;
     notify('Foto enviada! ✓');
     renderQEditor();
-  } catch(e) { notify('Erro ao enviar foto: '+e.message,'err'); console.error(e); }
+  } catch(e) { notify('Erro: '+e.message,'err'); console.error(e); }
 }
 
 async function handleAudioUpload(event, qi) {
-  if(!requireDB()) return;
   const file = event.target.files[0];
   if(!file) return;
-  if(file.size > 10*1024*1024) { notify('Áudio muito grande (máx 10MB)','err'); return; }
+  if(file.size > 100*1024*1024) { notify('Áudio muito grande (máx 100MB)','err'); return; }
   notify('Enviando áudio...','info');
   try {
-    const url = await uploadFile(file, `quizzes/audio/${Date.now()}_${file.name}`);
+    const url = await uploadAudio(file);
     S.editQs[qi].audioUrl = url;
     notify('Áudio enviado! ✓');
     renderQEditor();
-  } catch(e) { notify('Erro ao enviar áudio: '+e.message,'err'); console.error(e); }
+  } catch(e) { notify('Erro: '+e.message,'err'); console.error(e); }
+}
+
+function handlePhotoLink(val, qi, oi) {
+  if(!S.editQs[qi].photos) S.editQs[qi].photos=['','','',''];
+  S.editQs[qi].photos[oi] = val;
+}
+
+function handleAudioLink(val, qi) {
+  S.editQs[qi].audioUrl = val;
+}
+
+// Configurações de upload (salvas no browser)
+function openUploadConfig() {
+  const modal = document.getElementById('upload-config-modal');
+  document.getElementById('cfg-imgbb').value  = localStorage.getItem('imgbb_key') || '';
+  document.getElementById('cfg-cloud').value  = localStorage.getItem('cloudinary_cloud') || '';
+  document.getElementById('cfg-preset').value = localStorage.getItem('cloudinary_preset') || '';
+  modal.style.display = 'flex';
+}
+
+function saveUploadConfig() {
+  const imgbb  = document.getElementById('cfg-imgbb').value.trim();
+  const cloud  = document.getElementById('cfg-cloud').value.trim();
+  const preset = document.getElementById('cfg-preset').value.trim();
+  if(imgbb)  { localStorage.setItem('imgbb_key', imgbb);          IMGBB_API_KEY = imgbb; }
+  if(cloud)  { localStorage.setItem('cloudinary_cloud', cloud);   CLOUDINARY_CLOUD = cloud; }
+  if(preset) { localStorage.setItem('cloudinary_preset', preset); CLOUDINARY_PRESET = preset; }
+  notify('Configurações salvas!');
+  document.getElementById('upload-config-modal').style.display='none';
 }
 
 function saveQuiz() {
